@@ -1,125 +1,256 @@
-#  Google Play Store Analytics Dashboard
+# Google Play Store Advanced Analytics Dashboard
 
-A web-based analytics dashboard built using **Python, Streamlit, Pandas, Matplotlib, Seaborn, and SQLite**. The project analyzes Google Play Store data and provides interactive visualizations, KPIs, and user authentication.
+## Project Overview
 
----
+This project is an Advanced Google Play Store Analytics Dashboard developed using Python and Streamlit. The dashboard performs data cleaning, preprocessing, filtering, and visualization on the Google Play Store dataset. It provides multiple analytical views through interactive charts and applies custom business rules, category filtering, translation logic, and time-based visualization controls.
 
-##  Features
+## Objectives
 
-* User Login & Signup System
-* SQLite Database Integration
-* KPI Dashboard
-* Category Analysis
-* Rating Analysis
-* Installs Analysis
-* Reviews Analysis
-* Price Analysis
-* Content Rating Analysis
-* Genres Analysis
-* Top Installed Apps
-* Top Rated Apps
-* Category-wise Rating Analysis
-* Reviews Distribution
-* Correlation Heatmap
-* Dataset Explorer
-* Download Cleaned Dataset
-* Responsive Streamlit Interface
+The main objective of this project is to analyze Google Play Store applications and generate meaningful insights related to app ratings, installs, reviews, revenue, categories, and user engagement through advanced visualizations.
 
----
+## Technologies Used
 
-##  Dashboard Visualizations
+Python
 
-* Top Categories by Number of Apps
-* Rating Distribution
-* Reviews vs Rating Scatter Plot
-* Top Categories by Installs
-* Free vs Paid Apps Analysis
-* Price Distribution of Paid Apps
-* Content Rating Analysis
-* Genres Analysis
-* Top Installed Applications
-* Top Rated Applications
-* Category-wise Average Ratings
-* Reviews Distribution
-* Correlation Heatmap
+Streamlit
 
----
+Pandas
 
-##  Technologies Used
+NumPy
 
-* Python
-* Streamlit
-* Pandas
-* Matplotlib
-* Seaborn
-* SQLite
+Matplotlib
 
----
+Seaborn
 
-##  Dataset
+Plotly
 
-Google Play Store Dataset containing:
+SQLite
 
-* App Name
-* Category
-* Rating
-* Reviews
-* Size
-* Installs
-* Type
-* Price
-* Content Rating
-* Genres
-* Android Version
+Pytz
 
----
+## Dataset
 
-##  Installation
+Dataset Name: Google Play Store Dataset
 
-Clone the repository:
+File Used: googleplaystore.csv
 
-```bash
-git clone https://github.com/your-username/playstore-project.git
-```
+The dataset contains information about applications available on the Google Play Store including:
 
-Move into the project folder:
+App Name
 
-```bash
-cd playstore-project
-```
+Category
 
-Install dependencies:
+Rating
 
-```bash
+Reviews
+
+Installs
+
+Price
+
+Size
+
+Content Rating
+
+Genres
+
+Android Version
+
+Last Updated Date
+
+## Features
+
+Data Cleaning and Preprocessing
+
+Missing Value Handling
+
+Duplicate Record Removal
+
+Install Count Conversion
+
+Price Conversion
+
+Size Conversion to MB
+
+Date Conversion
+
+Revenue Calculation
+
+Android Version Extraction
+
+Interactive Dashboard Navigation
+
+Advanced Filtering
+
+Time-Based Graph Visibility
+
+Category Translation Features
+
+Downloadable Processed Dataset
+
+## Implemented Tasks
+
+### Task 1
+
+Grouped Bar Chart comparing:
+
+Average Rating
+
+Total Reviews
+
+Filters Applied:
+
+Average Rating ≥ 4.0
+
+Size > 10 MB
+
+January Updates Only
+
+Top 10 Categories by Installs
+
+Visible only between 3 PM and 5 PM IST
+
+### Task 2
+
+Interactive Choropleth Visualization for Global Installs
+
+Filters Applied:
+
+Top 5 Categories
+
+Installs > 1 Million
+
+Category should not start with A, C, G, or S
+
+Visible only between 6 PM and 8 PM IST
+
+### Task 3
+
+Dual Axis Chart comparing:
+
+Average Installs
+
+Revenue
+
+Filters Applied:
+
+Top 3 Categories
+
+Installs ≥ 10,000
+
+Revenue ≥ $10,000
+
+Android Version > 4.0
+
+Size > 15 MB
+
+Content Rating = Everyone
+
+App Name Length ≤ 30 Characters
+
+Visible only between 1 PM and 2 PM IST
+
+### Task 4
+
+Time Series Install Trend Analysis
+
+Filters Applied:
+
+Reviews > 500
+
+Category starts with B, C, or E
+
+App Name should not start with X, Y, or Z
+
+App Name should not contain S
+
+Category Translation Applied
+
+Beauty → Hindi
+
+Business → Tamil
+
+Dating → German
+
+Visible only between 6 PM and 9 PM IST
+
+### Task 5
+
+Bubble Chart Analysis
+
+Filters Applied:
+
+Rating > 3.5
+
+Installs > 50,000
+
+Reviews > 500
+
+Sentiment Subjectivity > 0.5
+
+Selected Categories Only
+
+Special Category Translation Applied
+
+Game Category Highlighted
+
+Visible only between 5 PM and 7 PM IST
+
+### Task 6
+
+Stacked Area Chart
+
+Filters Applied:
+
+Rating ≥ 4.2
+
+Reviews > 1000
+
+Size between 20 MB and 80 MB
+
+Category starts with T or P
+
+App Name should not contain numbers
+
+Category Translation Applied
+
+Travel & Local → French
+
+Productivity → Spanish
+
+Photography → Japanese
+
+Visible only between 4 PM and 6 PM IST
+
+## How to Run
+
+Install Required Packages
+
 pip install -r requirements.txt
-```
 
-Run the application:
+Run the Application
 
-```bash
 streamlit run dashboard.py
-```
 
----
+## Project Structure
 
-##  Key Insights
+playstore_project/
 
-* Family and Game categories contain the highest number of applications.
-* Most applications on Google Play Store are free.
-* Higher installs generally lead to higher review counts.
-* Average ratings are concentrated between 4.0 and 4.5.
-* Paid apps represent a small percentage of total applications.
+dashboard.py
 
----
+googleplaystore.csv
 
-##  Developer
+requirements.txt
 
-**Yuvraj Mahajan**
+README.md
 
-Aspiring Data Analyst | Python Developer | Machine Learning Enthusiast
+users.db
 
----
+## Developer
 
-##  License
+Yuvraj Mahajan
 
-This project is created for educational and portfolio purposes.
+## Conclusion
+
+This project demonstrates data cleaning, feature engineering, exploratory data analysis, advanced visualization techniques, business-rule implementation, and dashboard development using Streamlit. The dashboard provides meaningful insights into Google Play Store application data through interactive and time-controlled analytics.
+
