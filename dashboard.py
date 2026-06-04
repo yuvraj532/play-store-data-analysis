@@ -1,31 +1,17 @@
 import streamlit as st
 import pandas as pd
-import sqlite3
 import matplotlib.pyplot as plt
 import seaborn as sns
-
-# ---------------- DATABASE ----------------
-
-conn = sqlite3.connect("users.db", check_same_thread=False)
-cursor = conn.cursor()
-
-cursor.execute("""
-CREATE TABLE IF NOT EXISTS users(
-    username TEXT,
-    password TEXT
-)
-""")
-conn.commit()
-
-# ---------------- PAGE CONFIG ----------------
+from datetime import datetime
+import pytz
+import numpy as np
+import plotly.express as px
 
 st.set_page_config(
-    page_title="Play Store Analytics",
+    page_title="Play Store Advanced Analytics",
     page_icon="📱",
     layout="wide"
 )
-
-# ---------------- LOAD DATA ----------------
 
 @st.cache_data
 def load_data():
@@ -42,6 +28,7 @@ def load_data():
         .str.replace(',', '', regex=False)
         .str.replace('+', '', regex=False)
     )
+
     df['Installs'] = pd.to_numeric(df['Installs'], errors='coerce')
 
     df['Price'] = (
@@ -49,260 +36,603 @@ def load_data():
         .astype(str)
         .str.replace('$', '', regex=False)
     )
+
     df['Price'] = pd.to_numeric(df['Price'], errors='coerce')
 
+    df['Revenue'] = df['Price'] * df['Installs']
+
+    df['Last Updated'] = pd.to_datetime(
+        df['Last Updated'],
+        errors='coerce'
+    )
+
     df.drop_duplicates(inplace=True)
+
     return df
 
 df = load_data()
 
-# ---------------- SESSION ----------------
+def convert_size(x):
+    try:
+        x = str(x)
 
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+        if "M" in x:
+            return float(x.replace("M", ""))
 
-# ---------------- LOGIN PAGE ----------------
+        elif "k" in x:
+            return float(x.replace("k", "")) / 1024
 
-if not st.session_state.logged_in:
-    st.markdown(
-        "<h1 style='text-align:center;color:cyan;'>📱 Play Store Analytics</h1>",
-        unsafe_allow_html=True
-    )
+        return np.nan
 
-    tab1, tab2 = st.tabs(["Login", "Sign Up"])
+    except:
+        return np.nan
 
-    with tab1:
-        st.subheader("Login")
-        user = st.text_input("Username")
-        pwd = st.text_input("Password", type="password")
+df["Size_MB"] = df["Size"].apply(convert_size)
 
-        if st.button("Login"):
-            cursor.execute("SELECT * FROM users WHERE username=? AND password=?", (user, pwd))
-            data = cursor.fetchone()
-            if data:
-                st.session_state.logged_in = True
-                st.rerun()
-            else:
-                st.error("Invalid Username or Password")
+df['Android_Num'] = (
+    df['Android Ver']
+    .astype(str)
+    .str.extract(r'(\d+\.\d+)')[0]
+)
 
-    with tab2:
-        st.subheader("Sign Up")
-        new_user = st.text_input("Create Username")
-        new_pwd = st.text_input("Create Password", type="password")
+df['Android_Num'] = pd.to_numeric(
+    df['Android_Num'],
+    errors='coerce'
+)
 
-        if st.button("Create Account"):
-            cursor.execute("SELECT * FROM users WHERE username=?", (new_user,))
-            data = cursor.fetchone()
-            if data:
-                st.error("Username already exists")
-            else:
-                cursor.execute("INSERT INTO users VALUES (?, ?)", (new_user, new_pwd))
-                conn.commit()
-                st.success("Account Created Successfully")
+ist = pytz.timezone("Asia/Kolkata")
+hour = datetime.now(ist).hour
 
-# ---------------- DASHBOARD ----------------
+st.title(" Play Store Advanced Analytics Dashboard")
 
-else:
-    st.title("📊 Google Play Store Dashboard")
+page = st.sidebar.radio(
+    "Navigation",
+    [
+        "Task 1",
+        "Task 2",
+        "Task 3",
+        "Task 4",
+        "Task 5",
+        "Task 6"
+    ]
+)
 
-    page = st.sidebar.radio(
-        "Navigation",
-        [
-            "Home",
-            "KPI Dashboard",
-            "Category Analysis",
-            "Rating Analysis",
-            "Installs Analysis",
-            "Reviews Analysis",
-            "Price Analysis",
-            "Content Rating",
-            "Genres Analysis",
-            "Top Installed Apps",
-            "Top Rated Apps",
-            "Category Wise Rating",
-            "Reviews Distribution",
-            "Correlation Analysis",
-            "Free vs Paid",
-            "Data Table",
-            "About"
+# ---------------- TASK 1 ----------------
+
+if page == "Task 1":
+
+    if 15 <= hour < 17:
+
+        st.header("Task 1")
+
+        temp = df.copy()
+
+        # Rating >= 4
+        temp = temp[
+            temp['Rating'] >= 4.0
         ]
-    )
 
-    if st.sidebar.button("Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
+        # Size > 10 MB
+        temp = temp[
+            temp['Size_MB'] > 10
+        ]
 
-    # HOME
-    if page == "Home":
-        st.title("📱 Google Play Store Analytics")
-        st.image(
-            "https://upload.wikimedia.org/wikipedia/commons/7/78/Google_Play_Store_badge_EN.svg",
-            width=300
-        )
-        st.markdown("""
-        ### Features
-        ✅ Login & Signup
-        ✅ KPI Dashboard
-        ✅ 15+ Visualizations
-        ✅ Category Analysis
-        ✅ Rating Analysis
-        ✅ Installs Analysis
-        ✅ Reviews Analysis
-        ✅ Correlation Heatmap
-        ✅ Data Explorer
-        ✅ Download Clean Dataset
-        """)
+        # January updates only
+        temp = temp[
+            temp['Last Updated'].dt.month == 1
+        ]
 
-    # KPI
-    elif page == "KPI Dashboard":
-        total_apps = len(df)
-        avg_rating = round(df['Rating'].mean(), 2)
-        total_categories = df['Category'].nunique()
-        total_installs = int(df['Installs'].sum())
-        total_reviews = int(df['Reviews'].sum())
-        free_apps = len(df[df['Type'] == "Free"])
-        paid_apps = len(df[df['Type'] == "Paid"])
-        highest_rating = round(df['Rating'].max(), 2)
-
-        c1, c2, c3, c4 = st.columns(4)
-        c5, c6, c7, c8 = st.columns(4)
-
-        c1.metric("Total Apps", total_apps)
-        c2.metric("Avg Rating", avg_rating)
-        c3.metric("Categories", total_categories)
-        c4.metric("Installs", f"{total_installs:,}")
-        c5.metric("Reviews", f"{total_reviews:,}")
-        c6.metric("Free Apps", free_apps)
-        c7.metric("Paid Apps", paid_apps)
-        c8.metric("Highest Rating", highest_rating)
-
-    # CATEGORY
-    elif page == "Category Analysis":
-        st.subheader("Top Categories")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        top_cat = df['Category'].value_counts().head(10)
-        sns.barplot(x=top_cat.values, y=top_cat.index, ax=ax)
-        st.pyplot(fig)
-
-    # RATING
-    elif page == "Rating Analysis":
-        st.subheader("Rating Distribution")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.histplot(df['Rating'], bins=20, ax=ax)
-        st.pyplot(fig)
-
-    # INSTALLS
-    elif page == "Installs Analysis":
-        st.subheader("Top Installs")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        install_data = df.groupby('Category')['Installs'].sum().sort_values(ascending=False).head(10)
-        sns.barplot(x=install_data.values, y=install_data.index, ax=ax)
-        st.pyplot(fig)
-
-    # REVIEWS
-    elif page == "Reviews Analysis":
-        st.subheader("Reviews vs Rating")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.scatterplot(data=df, x='Reviews', y='Rating', ax=ax)
-        st.pyplot(fig)
-
-    # FREE VS PAID
-    elif page == "Free vs Paid":
-        st.subheader("Free vs Paid Apps")
-        fig, ax = plt.subplots(figsize=(7, 7))
-        type_count = df['Type'].value_counts()
-        ax.pie(type_count.values, labels=type_count.index, autopct='%1.1f%%')
-        st.pyplot(fig)
-
-    # PRICE
-    elif page == "Price Analysis":
-        st.subheader("Price Distribution")
-        paid = df[df['Price'] > 0]
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.histplot(paid['Price'], bins=20, ax=ax)
-        st.pyplot(fig)
-
-    # CONTENT RATING
-    elif page == "Content Rating":
-        st.subheader("Content Rating Analysis")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        content = df['Content Rating'].value_counts()
-        sns.barplot(x=content.index, y=content.values, ax=ax)
-        plt.xticks(rotation=45)
-        st.pyplot(fig)
-
-    # GENRES
-    elif page == "Genres Analysis":
-        st.subheader("Top Genres")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        genres = df['Genres'].value_counts().head(10)
-        sns.barplot(x=genres.values, y=genres.index, ax=ax)
-        st.pyplot(fig)
-
-    # TOP INSTALLED
-    elif page == "Top Installed Apps":
-        st.subheader("Top Installed Apps")
-        top_apps = df.nlargest(10, 'Installs')
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.barplot(data=top_apps, x='Installs', y='App', ax=ax)
-        st.pyplot(fig)
-
-    # TOP RATED
-    elif page == "Top Rated Apps":
-        st.subheader("Top Rated Apps")
-        top_rating = df.sort_values(by='Rating', ascending=False).head(10)
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.barplot(data=top_rating, x='Rating', y='App', ax=ax)
-        st.pyplot(fig)
-
-    # CATEGORY WISE RATING
-    elif page == "Category Wise Rating":
-        st.subheader("Average Rating by Category")
-        avg_rating = df.groupby('Category')['Rating'].mean().sort_values(ascending=False).head(10)
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.barplot(x=avg_rating.values, y=avg_rating.index, ax=ax)
-        st.pyplot(fig)
-
-    # REVIEWS DISTRIBUTION
-    elif page == "Reviews Distribution":
-        st.subheader("Reviews Distribution")
-        fig, ax = plt.subplots(figsize=(10, 5))
-        sns.histplot(df['Reviews'], bins=30, ax=ax)
-        st.pyplot(fig)
-
-    # CORRELATION
-    elif page == "Correlation Analysis":
-        st.subheader("Correlation Heatmap")
-        numeric_df = df.select_dtypes(include='number')
-        fig, ax = plt.subplots(figsize=(8, 6))
-        sns.heatmap(numeric_df.corr(), annot=True, cmap='coolwarm', ax=ax)
-        st.pyplot(fig)
-
-    # DATA TABLE
-    elif page == "Data Table":
-        st.subheader("Dataset Explorer")
-        st.dataframe(df)
-        st.download_button(
-            "Download Dataset",
-            df.to_csv(index=False),
-            "playstore_cleaned.csv",
-            "text/csv"
+        # Top 10 categories by installs
+        top_cat = (
+            temp.groupby('Category')['Installs']
+            .sum()
+            .sort_values(ascending=False)
+            .head(10)
+            .index
         )
 
-    # ABOUT
-    elif page == "About":
-        st.subheader("Project Information")
-        st.write("""
-        Project: Google Play Store Analytics
+        temp = temp[
+            temp['Category'].isin(top_cat)
+        ]
 
-        Technologies:
-        - Python
-        - Streamlit
-        - Pandas
-        - Matplotlib
-        - Seaborn
-        - SQLite
+        result = (
+            temp.groupby('Category')
+            .agg({
+                'Rating':'mean',
+                'Reviews':'sum'
+            })
+            .reset_index()
+        )
 
-        Developer:
-        Yuvraj Mahajan
-        """)
+        fig, ax = plt.subplots(
+            figsize=(12,6)
+        )
+
+        x = np.arange(len(result))
+
+        width = 0.4
+
+        ax.bar(
+            x-width/2,
+            result['Rating'],
+            width,
+            label='Average Rating'
+        )
+
+        ax.bar(
+            x+width/2,
+            result['Reviews']/100000,
+            width,
+            label='Total Reviews (Lakhs)'
+        )
+
+        ax.set_xticks(x)
+
+        ax.set_xticklabels(
+            result['Category'],
+            rotation=45
+        )
+
+        ax.set_title(
+            "Average Rating vs Reviews"
+        )
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+    else:
+
+        st.warning(
+            "Task 1 visible only between 3 PM and 5 PM IST"
+        )
+# ---------------- TASK 2 ----------------
+
+elif page == "Task 2":
+
+    if True:
+
+        st.header("Task 2")
+
+        temp = df.copy()
+
+        installs = (
+            temp.groupby("Category")["Installs"]
+            .sum()
+            .reset_index()
+        )
+
+        installs = installs[
+            installs["Installs"] > 1000000
+        ]
+
+        installs = installs[
+            ~installs["Category"]
+            .str.startswith(
+                ("A", "C", "G", "S"),
+                na=False
+            )
+        ]
+
+        installs = installs.sort_values(
+            "Installs",
+            ascending=False
+        ).head(5)
+
+        fig = px.choropleth(
+            installs,
+            locations="Category",
+            locationmode="country names",
+            color="Installs",
+            hover_name="Category",
+            title="Top Categories by Installs"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Task 2 visible only between 6 PM and 8 PM IST"
+        )
+# ---------------- TASK 3 ----------------
+
+elif page == "Task 3":
+
+    if True:
+
+        st.header("Task 3")
+
+        temp = df.copy()
+
+        # Revenue column create
+        temp["Revenue"] = (
+            temp["Installs"] *
+            temp["Price"]
+        )
+
+        # Android Version Numeric
+        temp["Android_Num"] = (
+            temp["Android Ver"]
+            .astype(str)
+            .str.extract(r'(\d+\.?\d*)')[0]
+        )
+
+        temp["Android_Num"] = pd.to_numeric(
+            temp["Android_Num"],
+            errors="coerce"
+        )
+
+        # Filters
+        temp = temp[
+            (temp["Installs"] >= 10000) &
+            (temp["Revenue"] >= 10000) &
+            (temp["Android_Num"] > 4.0) &
+            (temp["Size_MB"] > 15)
+        ]
+
+        temp = temp[
+            temp["Content Rating"] == "Everyone"
+        ]
+
+        temp = temp[
+            temp["App"].str.len() <= 30
+        ]
+
+        # Top 3 categories
+        top3 = (
+            temp.groupby("Category")["Installs"]
+            .sum()
+            .sort_values(ascending=False)
+            .head(3)
+            .index
+        )
+
+        temp = temp[
+            temp["Category"].isin(top3)
+        ]
+
+        summary = (
+            temp.groupby(
+                ["Category", "Type"]
+            )
+            .agg({
+                "Installs": "mean",
+                "Revenue": "mean"
+            })
+            .reset_index()
+        )
+
+        fig, ax1 = plt.subplots(
+            figsize=(12, 6)
+        )
+
+        sns.barplot(
+            data=summary,
+            x="Category",
+            y="Installs",
+            hue="Type",
+            ax=ax1
+        )
+
+        ax1.set_ylabel(
+            "Average Installs"
+        )
+
+        ax2 = ax1.twinx()
+
+        ax2.plot(
+            summary["Category"],
+            summary["Revenue"],
+            marker="o",
+            linewidth=3
+        )
+
+        ax2.set_ylabel(
+            "Revenue ($)"
+        )
+
+        plt.title(
+            "Average Installs vs Revenue"
+        )
+
+        st.pyplot(fig)
+
+    else:
+
+        st.warning(
+            "Task 3 visible only between 1 PM and 2 PM IST"
+        )
+
+# ---------------- TASK 4 ----------------
+
+elif page == "Task 4":
+
+    if True:
+
+        st.header("Task 4")
+
+        temp = df.copy()
+
+        # Reviews > 500
+        temp = temp[
+            temp["Reviews"] > 500
+        ]
+
+        # App name should not start with X,Y,Z
+        temp = temp[
+            ~temp["App"].str.startswith(
+                ("X", "Y", "Z"),
+                na=False
+            )
+        ]
+
+        # App name should not contain S
+        temp = temp[
+            ~temp["App"].str.contains(
+                "S",
+                case=False,
+                na=False
+            )
+        ]
+
+        # Categories allowed
+        temp = temp[
+            temp["Category"].isin(
+                [
+                    "BEAUTY",
+                    "BUSINESS",
+                    "DATING"
+                ]
+            )
+        ]
+
+        # Category translation
+        temp["Category"] = (
+            temp["Category"]
+            .replace({
+                "BEAUTY": "सौंदर्य",
+                "BUSINESS": "வணிகம்",
+                "DATING": "Dating(DE)"
+            })
+        )
+
+        # Convert date
+        temp["Last Updated"] = pd.to_datetime(
+            temp["Last Updated"],
+            errors="coerce"
+        )
+
+        trend = (
+            temp.groupby(
+                ["Last Updated", "Category"]
+            )["Installs"]
+            .sum()
+            .reset_index()
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(12,6)
+        )
+
+        for cat in trend["Category"].unique():
+
+            data_cat = trend[
+                trend["Category"] == cat
+            ]
+
+            ax.plot(
+                data_cat["Last Updated"],
+                data_cat["Installs"],
+                marker="o",
+                label=cat
+            )
+
+        ax.set_title(
+            "Installs Trend Over Time"
+        )
+
+        ax.set_xlabel(
+            "Date"
+        )
+
+        ax.set_ylabel(
+            "Total Installs"
+        )
+
+        ax.legend()
+
+        st.pyplot(fig)
+
+    else:
+
+        st.warning(
+            "Task 4 visible only between 6 PM and 9 PM IST"
+        )
+# ---------------- TASK 5 ----------------
+
+elif page == "Task 5":
+
+    if True:
+
+        st.header("Task 5")
+
+        temp = df.copy()
+
+        categories = [
+            "GAME",
+            "BEAUTY",
+            "BUSINESS",
+            "COMICS",
+            "COMMUNICATION",
+            "DATING",
+            "ENTERTAINMENT",
+            "SOCIAL",
+            "EVENTS"
+        ]
+
+        temp = temp[
+            temp["Category"]
+            .isin(categories)
+        ]
+
+        temp = temp[
+            temp["Rating"] > 3.5
+        ]
+
+        temp = temp[
+            temp["Reviews"] > 500
+        ]
+
+        temp = temp[
+            temp["Installs"] > 50000
+        ]
+
+        temp = temp[
+            ~temp["App"]
+            .str.contains(
+                "S",
+                case=False,
+                na=False
+            )
+        ]
+
+        temp["Category"] = (
+            temp["Category"]
+            .replace({
+                "BEAUTY": "सौंदर्य",
+                "BUSINESS": "வணிகம்",
+                "DATING": "Dating(DE)"
+            })
+        )
+
+        fig = px.scatter(
+            temp,
+            x="Size_MB",
+            y="Rating",
+            size="Installs",
+            color="Category",
+            hover_name="App",
+            title="Bubble Chart"
+        )
+
+        st.plotly_chart(
+            fig,
+            use_container_width=True
+        )
+
+    else:
+
+        st.warning(
+            "Task 5 visible only between 5 PM and 7 PM IST"
+        )
+# ---------------- TASK 6 ----------------
+
+elif page == "Task 6":
+
+    if True:
+
+        st.header("Task 6")
+
+        temp = df.copy()
+
+        # Rating >= 4.2
+        temp = temp[
+            temp["Rating"] >= 4.2
+        ]
+
+        # Reviews > 1000
+        temp = temp[
+            temp["Reviews"] > 1000
+        ]
+
+        # Size between 20 and 80 MB
+        temp = temp[
+            temp["Size_MB"].between(
+                20,
+                80
+            )
+        ]
+
+        # Category starts with T or P
+        temp = temp[
+            temp["Category"].str.startswith(
+                ("T", "P"),
+                na=False
+            )
+        ]
+
+        # App name should not contain numbers
+        temp = temp[
+            ~temp["App"].str.contains(
+                r"\d",
+                regex=True,
+                na=False
+            )
+        ]
+
+        # Category Translation
+        temp["Category"] = (
+            temp["Category"]
+            .replace({
+                "TRAVEL_AND_LOCAL": "Voyage",
+                "PRODUCTIVITY": "Productividad",
+                "PHOTOGRAPHY": "写真"
+            })
+        )
+
+        # Create Month Column
+        temp["Month"] = (
+            temp["Last Updated"]
+            .dt.to_period("M")
+            .astype(str)
+        )
+
+        pivot = temp.pivot_table(
+            values="Installs",
+            index="Month",
+            columns="Category",
+            aggfunc="sum",
+            fill_value=0
+        )
+
+        fig, ax = plt.subplots(
+            figsize=(14,7)
+        )
+
+        ax.stackplot(
+            pivot.index,
+            pivot.T.values,
+            labels=pivot.columns
+        )
+
+        ax.set_title(
+            "Cumulative Installs by Category"
+        )
+
+        ax.set_xlabel(
+            "Month"
+        )
+
+        ax.set_ylabel(
+            "Installs"
+        )
+
+        ax.legend(
+            loc="upper left"
+        )
+
+        plt.xticks(
+            rotation=45
+        )
+
+        st.pyplot(fig)
+
+    else:
+
+        st.warning(
+            "Task 6 visible only between 4 PM and 6 PM IST"
+        )
